@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"log"
 )
 
 // ErrPipelineNotFound pipeline not found
@@ -37,14 +36,12 @@ func (service *PipelineService) GetPipelineByID(id string) (*Pipeline, error) {
 	path := fmt.Sprintf("/pipelineConfigs/%s/history?limit=1", id)
 	req, err := service.NewRequest("GET", path)
 	if err != nil {
-		log.Printf("[ERROR] ErrorOnGGetPipelineByID_39: %s\n", err)
 		return nil, err
 	}
 
 	var pipelines *[]*Pipeline
 	pipelines, err = service.parsePipelinesRequest(req)
 	if err != nil {
-		log.Printf("[ERROR] ErrorOnGGetPipelineByID_46. err != nil. Line 46: %s\n", err)
 		return nil, err
 	}
 
@@ -109,13 +106,8 @@ func (service *PipelineService) DeletePipeline(pipeline *Pipeline) error {
 
 func (service *PipelineService) parsePipelinesRequest(req *http.Request) (*[]*Pipeline, error) {
 	var pipelinesHash []map[string]interface{}
-	resp, err := service.DoWithResponse(req, &pipelinesHash)
-	
-	if c := resp.StatusCode; 404 == c  {
-		log.Printf("[WARN] ErrorOnParsePipelinesRequest_115. status code is: %s\n", resp.StatusCode)
-		return nil, ErrPipelineNotFound
-	}else if err != nil {
-		log.Printf("[WARN] ErrorOnParsePipelinesRequest_115. req is: %s\n", req)
+	_, err := service.DoWithResponse(req, &pipelinesHash)
+	if err != nil {
 		return nil, err
 	}
 
@@ -123,7 +115,6 @@ func (service *PipelineService) parsePipelinesRequest(req *http.Request) (*[]*Pi
 	for _, pipelineHash := range pipelinesHash {
 		pipeline, err := parsePipeline(pipelineHash)
 		if err != nil {
-			log.Printf("[WARN] ErrorOnParsePipelinesRequest_122. pipelineHash is: %s\n", pipelineHash)
 			return nil, err
 		}
 		pipelines = append(pipelines, pipeline)
