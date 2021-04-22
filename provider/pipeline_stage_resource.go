@@ -173,10 +173,15 @@ func resourcePipelineStageRead(d *schema.ResourceData, m interface{}, createStag
 	pipelineID := d.Get(PipelineKey).(string)
 	pipelineService := m.(*Services).PipelineService
 	pipeline, err := pipelineService.GetPipelineByID(pipelineID)
-	if err != nil {
+	
+	if err == client.ErrPipelineNotFound {
 		log.Printf("[WARN] No Pipeline found: %s\n", err)
 		d.SetId("")
 		return nil
+	} else if err != nil {
+		log.Printf("[ERROR] Error on get Pipeline: %s\n", err)
+		d.SetId("")
+		return err
 	}
 
 	var cStage client.Stage
