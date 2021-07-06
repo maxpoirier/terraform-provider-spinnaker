@@ -175,27 +175,26 @@ func resourcePipelineStageRead(d *schema.ResourceData, m interface{}, createStag
 	pipelineService := m.(*Services).PipelineService
 	var pipeline *client.Pipeline
 	var err error
-	for i := 0; i < 1000; i++ {
-		log.Printf("[INFO] Looping on get pipeline. Iteration: %v\n", i)
-		pipeline, err = pipelineService.GetPipelineByID(pipelineID)
-		if err != nil {
-			if spinnakerErr, ok := err.(*client.SpinnakerError); ok {
-				if spinnakerErr.Status == 404 {
-					log.Printf("[WARN] No Pipeline found: %s\n", err)
-					d.SetId("")
-					return nil
-				}
-			}
-			log.Printf("[WARN] Retrying GetPipelineByID after error: %[1]t %[1]v\n", err)
-			time.Sleep(100 * time.Millisecond)
-			pipeline, err = pipelineService.GetPipelineByID(pipelineID)
-			if err != nil {
+
+	pipeline, err = pipelineService.GetPipelineByID(pipelineID)
+	if err != nil {
+		if spinnakerErr, ok := err.(*client.SpinnakerError); ok {
+			if spinnakerErr.Status == 404 {
+				log.Printf("[WARN] No Pipeline found: %s\n", err)
 				d.SetId("")
-				log.Printf("[PANIC] Error on getting pipeline: %[1]t %[1]v\n", err)
-				return err
+				return nil
 			}
 		}
+		log.Printf("[INFO] Retrying GetPipelineByID after error: %[1]t %[1]v\n", err)
+		time.Sleep(100 * time.Millisecond)
+		pipeline, err = pipelineService.GetPipelineByID(pipelineID)
+		if err != nil {
+			d.SetId("")
+			log.Printf("[PANIC] Error on getting pipeline: %[1]t %[1]v\n", err)
+			return err
+		}
 	}
+
 	var cStage client.Stage
 	cStage, err = pipeline.GetStage(d.Id())
 	if err == client.ErrStageNotFound {
